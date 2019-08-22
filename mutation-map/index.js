@@ -1,3 +1,4 @@
+/** Example code based loosely on https://github.com/iamshaunjp/graphql-playlist/blob/lesson-12/server/schema/schema.js  */
 const _ = require("lodash")
 const graphql = require("graphql")
 const express = require("express")
