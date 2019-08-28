@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom"
+import { BrowserRouter as Router, Route, Link } from "react-router-dom"
 
 function Frame(props) {
   return <div id={props.name} >
@@ -8,41 +8,43 @@ function Frame(props) {
 }
 
 function View(props) {
-  return <div class="pane" style={{ backgroundColor: props.color || "yellow" }} >
-    <p><Link target="_self" to="/red">Choose Red</Link></p>
-    <p><Link target="_self" to="/green">Choose Green</Link></p>
-    <p><Link target="_self" to="/">Reset</Link></p>
+  let color = props.pathSuffix
+  if (!color) {
+    color = "yellow"
+  }
+  return <div class="pane" style={{ backgroundColor: color }} >
+    <p><Link to="/left/red">Left Red</Link></p>
+    <p><Link to="/right/red">Right Red</Link></p>
+    <p><Link to={`${props.pathPrefix}red`}>Self Red</Link></p>
+    <p><Link to="/left/green">Left Green</Link></p>
+    <p><Link to="/right/green">Right Green</Link></p>
+    <p><Link to={`${props.pathPrefix}green`}>Self Green</Link></p>
+    <p><Link to="/left">Left Reset</Link></p>
+    <p><Link to="/right">Right Reset</Link></p>
+    <p><Link to={`${props.pathPrefix}`}>Self Reset</Link></p>
   </div>
+}
+
+function FilterPath(props) {
+  return <Route render={({ location: { pathname } }) => {
+    const { pathPrefix } = props
+    let mergeProps = { pathPrefix }
+    if (pathname.startsWith(pathPrefix)) {
+      const pathSuffix = pathname.slice(pathPrefix.length)
+      mergeProps = { ...mergeProps, pathSuffix }
+    }
+    return React.Children.map(props.children, child => React.cloneElement(child, mergeProps))
+  }} />
 }
 
 function FrameSet(props) {
   return <Router>
-    <Frame name="left">
-      <Switch>
-        <Route exact path="/" >
-          <View />
-        </Route>
-        <Route path="/green" >
-          <View color="green" />
-        </Route>
-        <Route path="/red" >
-          <View color="red" />
-        </Route>
-      </Switch>
-    </Frame>
-    <Frame name="right">
-      <Switch>
-        <Route exact path="/" >
-          <View />
-        </Route>
-        <Route path="/green" >
-          <View color="green" />
-        </Route>
-        <Route path="/red" >
-          <View color="red" />
-        </Route>
-      </Switch>
-    </Frame>
+    <FilterPath pathPrefix="/left/">
+      <View />
+    </FilterPath>
+    <FilterPath pathPrefix="/right/">
+      <View />
+    </FilterPath>
   </Router>
 }
 
