@@ -19,14 +19,15 @@ function View(props) {
   </div>
 }
 
-function FilterPath(props) {
-  return <Route render={({ location: { pathname } }) => {
-    const { pathPrefix } = props
+function FilterPath(filterProps) {
+  const { pathPrefix } = filterProps
+  return <Route render={(routeProps) => {
+    const { location: { pathname } } = routeProps
     let pathSuffix
     if (pathname.startsWith(pathPrefix)) {
       pathSuffix = pathname.slice(pathPrefix.length)
     }
-    return React.Children.map(props.children, child => React.cloneElement(child, { pathPrefix, pathSuffix }))
+    return React.Children.map(filterProps.children, child => React.cloneElement(child, { pathPrefix, pathSuffix }))
   }} />
 }
 
