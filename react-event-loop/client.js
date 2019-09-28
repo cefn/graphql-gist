@@ -5,7 +5,7 @@ import ReactDom from "react-dom"
 import backend from "./backend"
 
 function TableEditor() {
-  //define the focus of the table editor
+  //define the focused row type and id
   const [rowType, setRowType] = useState("note")
   const [rowId, setRowId] = useState(null) //start with a blank row
 
@@ -23,11 +23,11 @@ function TableEditor() {
   const fetchIds = useCallback(async () => setRemoteIds(await backend.listIds(rowType)), [rowType])
 
   //callbacks to manipulate local and remote row information
+  const saveItem = useCallback(async () => setRemoteRow(await backend.saveItem(rowType, localRow)), [rowType, localRow])
   const resetItem = useCallback(() => {
     setLocalRow(null)
     setRemoteRow(null)
   }, [])
-  const saveItem = useCallback(async () => setRemoteRow(await backend.saveItem(rowType, localRow)), [rowType, localRow])
 
   //handle changes in focused record id
   //reset for null id, fetch record otherwise
@@ -107,7 +107,7 @@ function TableEditor() {
       <input type="button" onClick={createFocusCallback(rowType, null)} value="New"></input>
     </div>
 
-    {/* Buttons to edit existing notes */}
+    {/* Buttons to edit existing notes (with id) */}
     {remoteIds.map((remoteId) =>
       <div key={remoteId}>
         <input type="button" onClick={createFocusCallback(rowType, remoteId)} value={`Load ${remoteId.substring(0, 8)}`}></input>
