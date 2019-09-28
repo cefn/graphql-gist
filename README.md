@@ -1,2 +1,3 @@
-# graphql-gist
-Examples to discuss GraphQL features
+# SSCCEs
+
+Examples coded specifically to discuss features of open source packages.
