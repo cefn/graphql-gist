@@ -4,74 +4,83 @@ import PropTypes from "prop-types"
 import ReactDom from "react-dom"
 import backend from "./backend"
 
+import whyDidYouRender from "@welldone-software/why-did-you-render"
+
+whyDidYouRender(React)
+
 function TableEditor() {
   //define the focused row type and id
-  const [rowType, setRowType] = useState("note")
+  const [rowType, setRowType] = useState("note") //server-side map has a 'note' schema with id,title
   const [rowId, setRowId] = useState(null) //start with a blank row
 
-  //track the primary key list, schema, item from db 
-  const [remoteIds, setRemoteIds] = useState([])
-  const [remoteSchema, setRemoteSchema] = useState(null)
+  //track the primary key list, schema, row from db 
+  const [remoteIds, setRemoteIds] = useState([]) //list of row ids
+  const [remoteSchema, setRemoteSchema] = useState(null) //field types,names for each row of this type
   const [remoteRow, setRemoteRow] = useState(null)
 
-  //track editing changes
+  //track changes to the row from pure child RowEditor component
   const [localRow, setLocalRow] = useState(null)
 
-  //callbacks to populate up-to-date values from the db
-  const fetchSchema = useCallback(async () => setRemoteSchema(await backend.loadSchema(rowType)), [rowType])
-  const fetchItem = useCallback(async () => setRemoteRow(await backend.loadItem(rowType, rowId)), [rowId, rowType])
+  //fetch list of row ids
   const fetchIds = useCallback(async () => setRemoteIds(await backend.listIds(rowType)), [rowType])
 
-  //callbacks to manipulate local and remote row information
-  const saveItem = useCallback(async () => setRemoteRow(await backend.saveItem(rowType, localRow)), [rowType, localRow])
-  const resetItem = useCallback(() => {
-    setLocalRow(null)
-    setRemoteRow(null)
-  }, [])
-
-  //handle changes in focused record id
-  //reset for null id, fetch record otherwise
+  //get row id list on load
   useEffect(() => {
-    if (rowId === null) {
-      //blank data
-      resetItem()
-    }
-    else {
-      //populate data
-      fetchItem()
-    }
     fetchIds()
-  }, [rowId, rowType, fetchItem, resetItem, fetchIds])
+  }, [fetchIds])
 
-  //handle changes in focused record type
-  //fetch schema
+  //changing focused record type,id requires row fetch
   useEffect(() => {
-    fetchSchema()
-  }, [fetchSchema, rowType])
+    if (rowId === null) { //focused id is null - no remote copy (blank row not saved to db, yet)
+      //blank data
+      setLocalRow(null)
+      setRemoteRow(null)
+    }
+    else { //has focused id, there must be a remote copy
+      if (localRow && (localRow.id === rowId)) { //localRow already reflects remote copy
+        return
+      }
+      else { //remoteData not yet fetched
+        setRemoteRow(null)
+        const fetchItem = async () => setRemoteRow(await backend.loadItem(rowType, rowId))
+        fetchItem()
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowType, rowId])
 
-  //merge changes from remote
+  //changing focused record type requires schema fetch
+  useEffect(() => {
+    setRemoteSchema(null)
+    const fetchSchema = async () => setRemoteSchema(await backend.loadSchema(rowType))
+    fetchSchema()
+  }, [rowType])
+
+  //updated remoteRow should be merged to local
   useEffect(() => {
     if (remoteRow) {
       if (lodash.isEqual(localRow, remoteRow)) {
-        console.log("Update discarded: Already synced with remote")
+        console.log("Save was successful: local now equals remote")
+        return
       }
       else {
-        //reconcile with current focus
-        if (rowId) { //focus already set
-          if (remoteRow.id !== rowId) { //focus should match
+        //reconcile with focused row
+        if (rowId) { //setRowId had triggered remoteRow retrieval
+          if (remoteRow.id !== rowId) { //rowId no longer the same
             console.log(`Update discarded: Cannot sync ${remoteRow.id} into ${rowId}`)
             return
           }
         }
-        else { //focus not set, update it to track db
+        else { //focus wasn't set, blank record id should track db
           setRowId(remoteRow.id)
+          fetchIds() //requires rowType dependency
         }
-        setLocalRow({ ...remoteRow })
+        setLocalRow({ ...remoteRow }) //shallow copy remoteRow
       }
     }
     // Do not propagate changes from localRow!
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowId, remoteRow])
+  }, [fetchIds, remoteRow, rowId, rowType])
 
   //merge changes from local
   useEffect(() => {
@@ -80,12 +89,13 @@ function TableEditor() {
         console.log("Update discarded: Already synced with remote")
       }
       else {
+        const saveItem = async () => setRemoteRow(await backend.saveItem(rowType, localRow))
         saveItem()
       }
     }
     // Do not propagate changes from remoteRow!
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localRow, saveItem])
+  }, [localRow])
 
   //creates 'navigation' callbacks which change the focused row
   const createFocusCallback = useCallback((focusType, focusId) => { //useCallback() not needed here?
@@ -95,6 +105,7 @@ function TableEditor() {
     }
     return focusCallback
   }, [])
+
 
   //handle changes in row editor
   const rowEditorCallback = useCallback((changedItem) => {
@@ -118,29 +129,39 @@ function TableEditor() {
   </Fragment>
 }
 
-function RowEditor(props) {
-  //creates separate handler for each field to handle value changes  
-  const createFieldHandler = useCallback((fieldName) => {
-    const fieldHandler = (event) => {
-      props.onChange({ ...props.item, [fieldName]: event.target.value })
-    }
-    return fieldHandler
-  }, [props])
+TableEditor.whyDidYouRender = true
 
-  return <form>
-    {Object.entries(props.schema).map(([fieldName]) => {
-      return <div key={fieldName}>
-        <label style={{ display: "inline-block", width: "100px" }}>{fieldName}</label>
-        <input name={fieldName} value={(props.item && props.item[fieldName]) || ""} onChange={createFieldHandler(fieldName)} />
-      </div>
-    })}
-  </form >
-}
+// eslint-disable-next-line react/display-name
+const RowEditor = React.memo(
+  function RowEditor(props) {
+
+    //creates separate handler for each field to handle value changes
+    const createFieldHandler = (fieldName) => {
+      const fieldHandler = (event) => {
+        props.onChange({ ...props.item, [fieldName]: event.target.value })
+      }
+      return fieldHandler
+    }
+
+    return <form>
+      {Object.entries(props.schema).map(([fieldName]) => {
+        return <div key={fieldName}>
+          <label style={{ display: "inline-block", width: "100px" }}>{fieldName}</label>
+          <input name={fieldName} value={(props.item && props.item[fieldName]) || ""} onChange={createFieldHandler(fieldName)} />
+        </div>
+      })}
+    </form >
+  }
+
+)
+
 
 RowEditor.propTypes = {
   "schema": PropTypes.object.isRequired,
   "onChange": PropTypes.func.isRequired,
   "item": PropTypes.object,
 }
+
+RowEditor.whyDidYouRender = true
 
 ReactDom.render(<TableEditor />, document.getElementById("app"))
