@@ -26,11 +26,15 @@ async function postToPath(path, data) {
   return res.json()
 }
 
+async function loadTypes(itemType) {
+  return await getFromPath("/listtypes")
+}
+
 async function loadSchema(itemType) {
   return await getFromPath(`/schema/${itemType}`)
 }
 
-async function listIds(itemType) {
+async function loadIds(itemType) {
   return await getFromPath(`/listids/${itemType}`)
 }
 
@@ -44,7 +48,8 @@ async function saveItem(itemType, itemData) {
 
 export default {
   loadSchema,
-  listIds,
+  loadIds,
+  loadTypes,
   loadItem,
   saveItem
 }

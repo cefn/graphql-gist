@@ -1,9 +1,11 @@
-const lodash = require('lodash')
+const lodash = require("lodash")
 const express = require("express")
 
 //mixin adds upsert, getById etc. to lodash 
-const lodashId = require('lodash-id')
+const lodashId = require("lodash-id")
 lodash.mixin(lodashId)
+
+const port = 8080
 
 const schemas = {
   "note": {
@@ -57,6 +59,12 @@ app.get("/load/:itemType/:itemId", (req, res, next) => {
   res.json(item)
 })
 
+//list types from database 
+app.get("/listtypes", (req, res, next) => {
+  res.json(Object.keys(schemas))
+})
+
+
 //list item ids by type from database 
 app.get("/listids/:itemType", (req, res, next) => {
   const itemType = req.params.itemType
@@ -65,5 +73,5 @@ app.get("/listids/:itemType", (req, res, next) => {
   res.json(itemIdList)
 })
 
-
-app.listen(8080)
+console.log(`Server listening on ${port}`)
+app.listen(port)

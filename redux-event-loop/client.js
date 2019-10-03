@@ -1,49 +1,61 @@
-import React, { Fragment } from "react"
+import React, { useEffect, useCallback, Fragment } from "react"
 import PropTypes from "prop-types"
 import ReactDom from "react-dom"
-import backend from "./backend"
-import { focusRow } from "./store"
+import { store } from "./store"
 import { Provider, connect } from "react-redux"
+import allActions from "./action"
 
 import whyDidYouRender from "@welldone-software/why-did-you-render"
-
 whyDidYouRender(React)
 
-const tableStateMap = ({ types, focusType, ids }, /*ownProps*/) => {
+const tableStateMap = (state /*, ownProps*/) => {
+  const { schemas, rows, focusType, focusId } = state
   return {
-    types,
     focusType,
-    focusTypeIds: ids[focusType] || [] //retrieve idlist for current focusType
+    focusId,
+    focusSchema: schemas[focusType],  //reloaded as focusType changes
+    focusRow: rows[focusId],          //reloaded as focusId changes
   }
 }
 
-const tableDispatchMap = {
-  focusRow
-}
+const tableDispatchMap = allActions
 
-const TableEditor = connect(tableStateMap, tableDispatchMap, ({ types, ids, focusType, focusRow }) => {
+const tableConnector = connect(tableStateMap, tableDispatchMap)
 
-  const createFocusCallback = (rowType, rowId) => {
-    return focusRow.bind(null, rowType, rowId)
+const TableEditor = tableConnector((props) => {
+
+  const {
+    focusType,
+    focusSchema,
+    focusRow,
+    loadSchemaAction,
+    changeFocusAction,
+    saveRowAction,
+  } = props
+
+  useEffect(() => { //lazy load schema when record type changes
+    if (focusType) {
+      loadSchemaAction(focusType)
+    }
+  }, [focusType, loadSchemaAction])
+
+  useEffect(() => { //on launch, load blank record of type note 
+    changeFocusAction("note", null)
+  }, [changeFocusAction])
+
+
+  // const createFocusChanger = (rowType, rowId) => function focusChanger() {
+  //   return changeFocusAction(rowType, rowId)
+  // }
+
+  const rowChangeHandler = (row) => {
+    saveRowAction(focusType, row)
   }
 
   return <Fragment>
-    {/* Button to edit blank note (null id) */}
-    <div>
-      <input type="button" onClick={createFocusCallback(focusType, null)} value="New"></input>
-    </div>
-
-    {/* Buttons to edit existing notes (with id) */}
-    {ids.map((id) =>
-      <div key={id}>
-        <input type="button" onClick={createFocusCallback(rowType, id)} value={`Load ${id.substring(0, 8)}`}></input>
-      </div>)}
-
-    {/* Edit control */}
-    {remoteSchema ? <RowEditor schema={remoteSchema} item={localRow} onChange={rowEditorCallback}></RowEditor> : <h2>Loading Editor...</h2>}
+    {focusSchema ? <RowEditor schema={focusSchema} row={focusRow} onChange={rowChangeHandler}></RowEditor> : <h2>Loading Editor...</h2>}
   </Fragment>
-}
-)
+})
 
 TableEditor.whyDidYouRender = true
 
@@ -54,26 +66,30 @@ const RowEditor = React.memo(
     //creates separate handler for each field to handle value changes
     const createFieldHandler = (fieldName) => {
       const fieldHandler = (event) => {
-        props.onChange({ ...props.item, [fieldName]: event.target.value })
+        const fieldValue = event.target.value
+        props.onChange({ ...props.row, [fieldName]: fieldValue })
       }
       return fieldHandler
     }
 
-    return <form>
+    return <form id="rowEditor">
       {Object.entries(props.schema).map(([fieldName]) => {
         return <div key={fieldName}>
           <label style={{ display: "inline-block", width: "100px" }}>{fieldName}</label>
-          <input name={fieldName} value={(props.item && props.item[fieldName]) || ""} onChange={createFieldHandler(fieldName)} />
+          <input name={fieldName} value={(props.row && props.row[fieldName]) || ""} onChange={createFieldHandler(fieldName)} />
         </div>
       })}
     </form >
   }
-
 )
+RowEditor.defaultProps = {
+  "schema": null,
+  "row": null,
+}
 RowEditor.propTypes = {
-  "schema": PropTypes.object.isRequired,
+  "schema": PropTypes.object,
+  "row": PropTypes.object,
   "onChange": PropTypes.func.isRequired,
-  "item": PropTypes.object,
 }
 RowEditor.whyDidYouRender = true
 

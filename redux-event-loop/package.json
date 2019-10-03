@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "npm-run-all --parallel client server",
-    "server": "nodemon server.js",
+    "server": "node server.js",
     "client": "webpack --watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest test/integration/test.js"
   },
   "babel": {
     "presets": [
@@ -111,8 +111,11 @@
   },
   "dependencies": {
     "@welldone-software/why-did-you-render": "^3.3.5",
+    "chromedriver": "^77.0.0",
     "deepmerge": "^4.0.0",
     "express": "^4.17.1",
+    "geckodriver": "^1.18.0",
+    "jest": "^24.9.0",
     "lodash": "^4.17.15",
     "lodash-id": "^0.14.0",
     "node-fetch": "^2.6.0",
@@ -121,6 +124,9 @@
     "react-dom": "^16.9.0",
     "react-redux": "^7.1.1",
     "redux": "^4.0.4",
-    "redux-saga": "^1.1.1"
+    "redux-saga": "^1.1.1",
+    "redux-thunk": "^2.3.0",
+    "selenium-webdriver": "^4.0.0-alpha.5",
+    "winston": "^3.2.1"
   }
 }
