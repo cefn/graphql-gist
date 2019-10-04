@@ -86,7 +86,7 @@
       "no-unused-vars": [
         "error",
         {
-          "argsIgnorePattern": "^_"
+          "argsIgnorePattern": "^_|(next)"
         }
       ]
     }
@@ -117,6 +117,7 @@
     "deepmerge": "^4.0.0",
     "express": "^4.17.1",
     "geckodriver": "^1.18.0",
+    "is-equal": "^1.5.5",
     "jest": "^24.9.0",
     "lodash": "^4.17.15",
     "lodash-id": "^0.14.0",
@@ -128,6 +129,7 @@
     "redux": "^4.0.4",
     "redux-saga": "^1.1.1",
     "redux-thunk": "^2.3.0",
+    "redux-watch": "^1.1.1",
     "selenium-webdriver": "^4.0.0-alpha.5",
     "winston": "^3.2.1"
   }
