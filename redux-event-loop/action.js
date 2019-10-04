@@ -1,7 +1,8 @@
+import reduxWatch from "redux-watch"
 import { logger } from "./util"
 import { populateMerge } from "./store"
 import backend from "./backend"
-import isEqual from "lodash/isEqual"
+import isEqual from "is-equal"
 
 //synchronous state-merging actions
 
@@ -96,6 +97,39 @@ function saveRowAction(rowType, localRow, force = false) {
   }
 }
 
+function track(store, path, fn) {
+  const watch = reduxWatch(store.getState, path)
+  store.subscribe(watch(fn))
+}
+
+//launch the application with default type of 'note' and id of null
+//configure event sequences needed for the app 
+function launchApplication(store, initialType = "note", initialId = null) {
+  const dispatch = store.dispatch
+
+  //load schema and id list when type comes into focus
+  track(store, "focusType", (nextFocusType, _prev, _path) => {
+    if (nextFocusType) {
+      dispatch(loadSchemaAction(nextFocusType))
+      dispatch(loadIdsAction(nextFocusType))
+    }
+  })
+
+  //load row when id comes into focus  
+  track(store, "focusId", (nextFocusId, _prev, _path) => {
+    const state = store.getState()
+    const focusType = state.focusType
+    if (focusType && nextFocusId) {
+      if (!state.rows[nextFocusId]) {
+        dispatch(loadRowAction(focusType, nextFocusId))
+      }
+    }
+  })
+
+  //trigger application load by specifying type and id
+  dispatch(changeFocusAction(initialType, initialId))
+}
+
 export default {
   loadTypesAction,
   loadSchemaAction,
@@ -107,4 +141,5 @@ export default {
   receiveRowAction,
   changeFocusAction,
   saveRowAction,
+  launchApplication,
 }

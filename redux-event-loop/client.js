@@ -1,84 +1,57 @@
-import React, { useEffect, useCallback, Fragment } from "react"
+import React from "react"
 import PropTypes from "prop-types"
 import ReactDom from "react-dom"
 import { store } from "./store"
 import { Provider, connect } from "react-redux"
-import allActions from "./action"
-
 import whyDidYouRender from "@welldone-software/why-did-you-render"
+
+/* CONFIGURE REDUX CONNECTOR */
+
+//a map of redux actions to be be dispatch-wrapped, assigned to props 
+import action from "./action"
+
+//a map of redux store to editor props 
+const tableEditorStateMap = ({ focusType, focusId, schemas, rows, ids } /*, ownProps*/) => ({
+  focusType,
+  focusTypeIds: ids[focusType] || [],
+  focusTypeSchema: schemas[focusType],
+  focusId,
+  focusIdRow: rows[focusId],
+})
+
+const tableEditorDispatchMap = action
+const { launchApplication } = action
+
+//connector which wires state and functions to props
+const tableEditorReduxConnector = connect(tableEditorStateMap, tableEditorDispatchMap)
+
+//trigger data loading
+launchApplication(store)
+
+//monitor wasted renders
 whyDidYouRender(React)
 
-const tableStateMap = (state /*, ownProps*/) => {
-  const { focusType, focusId, schemas, rows, ids } = state
-  return {
-    focusType,
-    focusTypeIds: ids[focusType] || [],
-    focusTypeSchema: schemas[focusType],
-    focusId,
-    focusIdRow: rows[focusId],
-    schemas,
-    rows,
-    ids,
-  }
-}
 
-const tableDispatchMap = allActions
-
-const tableConnector = connect(tableStateMap, tableDispatchMap)
-
-const TableEditor = tableConnector((props) => {
-
-  const {
-    focusType,
-    focusTypeIds,
-    focusTypeSchema,
-    focusId,
-    focusIdRow,
-    loadSchemaAction,
-    loadIdsAction,
-    loadRowAction,
-    changeFocusAction,
-    saveRowAction,
-  } = props
-
-  useEffect(() => { //lazy load schema when record type changes
-    if (focusType) {
-      loadSchemaAction(focusType)
-      loadIdsAction(focusType)
-    }
-  }, [focusType, loadIdsAction, loadSchemaAction])
-
-  useEffect(() => { //lazy load schema when record type changes
-    if (focusId) {
-      if ((!focusIdRow) || (!(focusIdRow.id === focusId))) {
-        loadRowAction(focusType, focusId)
-      }
-    }
-  }, [focusId, focusIdRow, focusType, loadIdsAction, loadRowAction, loadSchemaAction])
-
-  useEffect(() => { //on launch, load blank record of type note 
-    changeFocusAction("note", null)
-  }, [changeFocusAction])
-
+const TableEditor = tableEditorReduxConnector((props) => {
 
   const createFocusChanger = (rowType, rowId) => function focusChanger() {
-    return changeFocusAction(rowType, rowId)
+    return props.changeFocusAction(rowType, rowId)
   }
 
   const rowChangeHandler = (row) => {
-    saveRowAction(focusType, row)
+    props.saveRowAction(props.focusType, row)
   }
 
-  return <Fragment>
-    <input type="button" onClick={createFocusChanger(focusType, null)} value="New"></input>
+  return <>
+    <input type="button" onClick={createFocusChanger(props.focusType, null)} value="New"></input>
     <ul>
-      {focusTypeIds.map((id) =>
+      {props.focusTypeIds.map((id) =>
         <li key={id}>
-          <input type="button" onClick={createFocusChanger(focusType, id)} value={`Load ${id.substring(0, 8)}`}></input>
+          <input type="button" onClick={createFocusChanger(props.focusType, id)} value={`Load ${id.substring(0, 8)}`}></input>
         </li>)}
     </ul>
-    {focusTypeSchema ? <RowEditor schema={focusTypeSchema} row={focusIdRow} onChange={rowChangeHandler}></RowEditor> : <h2>Loading Editor...</h2>}
-  </Fragment>
+    {props.focusTypeSchema ? <RowEditor schema={props.focusTypeSchema} row={props.focusIdRow} onChange={rowChangeHandler}></RowEditor> : <h2>Loading Editor...</h2>}
+  </>
 })
 
 TableEditor.whyDidYouRender = true
