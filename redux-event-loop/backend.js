@@ -26,7 +26,7 @@ async function postToPath(path, data) {
   return res.json()
 }
 
-async function loadTypes(itemType) {
+async function loadTypes() {
   return await getFromPath("/listtypes")
 }
 
