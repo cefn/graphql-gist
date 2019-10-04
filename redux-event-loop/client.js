@@ -9,12 +9,16 @@ import whyDidYouRender from "@welldone-software/why-did-you-render"
 whyDidYouRender(React)
 
 const tableStateMap = (state /*, ownProps*/) => {
-  const { schemas, rows, focusType, focusId } = state
+  const { focusType, focusId, schemas, rows, ids } = state
   return {
     focusType,
+    focusTypeIds: ids[focusType] || [],
+    focusTypeSchema: schemas[focusType],
     focusId,
-    focusSchema: schemas[focusType],  //reloaded as focusType changes
-    focusRow: rows[focusId],          //reloaded as focusId changes
+    focusIdRow: rows[focusId],
+    schemas,
+    rows,
+    ids,
   }
 }
 
@@ -26,9 +30,13 @@ const TableEditor = tableConnector((props) => {
 
   const {
     focusType,
-    focusSchema,
-    focusRow,
+    focusTypeIds,
+    focusTypeSchema,
+    focusId,
+    focusIdRow,
     loadSchemaAction,
+    loadIdsAction,
+    loadRowAction,
     changeFocusAction,
     saveRowAction,
   } = props
@@ -36,24 +44,40 @@ const TableEditor = tableConnector((props) => {
   useEffect(() => { //lazy load schema when record type changes
     if (focusType) {
       loadSchemaAction(focusType)
+      loadIdsAction(focusType)
     }
-  }, [focusType, loadSchemaAction])
+  }, [focusType, loadIdsAction, loadSchemaAction])
+
+  useEffect(() => { //lazy load schema when record type changes
+    if (focusId) {
+      if ((!focusIdRow) || (!(focusIdRow.id === focusId))) {
+        loadRowAction(focusType, focusId)
+      }
+    }
+  }, [focusId, focusIdRow, focusType, loadIdsAction, loadRowAction, loadSchemaAction])
 
   useEffect(() => { //on launch, load blank record of type note 
     changeFocusAction("note", null)
   }, [changeFocusAction])
 
 
-  // const createFocusChanger = (rowType, rowId) => function focusChanger() {
-  //   return changeFocusAction(rowType, rowId)
-  // }
+  const createFocusChanger = (rowType, rowId) => function focusChanger() {
+    return changeFocusAction(rowType, rowId)
+  }
 
   const rowChangeHandler = (row) => {
     saveRowAction(focusType, row)
   }
 
   return <Fragment>
-    {focusSchema ? <RowEditor schema={focusSchema} row={focusRow} onChange={rowChangeHandler}></RowEditor> : <h2>Loading Editor...</h2>}
+    <input type="button" onClick={createFocusChanger(focusType, null)} value="New"></input>
+    <ul>
+      {focusTypeIds.map((id) =>
+        <li key={id}>
+          <input type="button" onClick={createFocusChanger(focusType, id)} value={`Load ${id.substring(0, 8)}`}></input>
+        </li>)}
+    </ul>
+    {focusTypeSchema ? <RowEditor schema={focusTypeSchema} row={focusIdRow} onChange={rowChangeHandler}></RowEditor> : <h2>Loading Editor...</h2>}
   </Fragment>
 })
 
