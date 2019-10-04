@@ -28,7 +28,8 @@
     "plugins": [
       "@babel/plugin-transform-runtime"
     ],
-    "sourceMaps": "both"
+    "sourceMaps": "both",
+    "inputSourceMap": true
   },
   "eslintConfig": {
     "env": {
