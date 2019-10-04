@@ -7,7 +7,6 @@ import whyDidYouRender from "@welldone-software/why-did-you-render"
 
 /* CONFIGURE REDUX CONNECTOR */
 
-//a map of redux actions to be be dispatch-wrapped, assigned to props 
 import action from "./action"
 
 //a map of redux store to editor props 
@@ -19,13 +18,14 @@ const tableEditorStateMap = ({ focusType, focusId, schemas, rows, ids } /*, ownP
   focusIdRow: rows[focusId],
 })
 
+//a map of redux actions to be be dispatch-wrapped, assigned to props 
 const tableEditorDispatchMap = action
-const { launchApplication } = action
 
 //connector which wires state and functions to props
 const tableEditorReduxConnector = connect(tableEditorStateMap, tableEditorDispatchMap)
 
 //trigger data loading
+const { launchApplication } = action
 launchApplication(store)
 
 //monitor wasted renders

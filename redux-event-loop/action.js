@@ -117,11 +117,16 @@ function launchApplication(store, initialType = "note", initialId = null) {
 
   //load row when id comes into focus  
   track(store, "focusId", (nextFocusId, _prev, _path) => {
-    const state = store.getState()
-    const focusType = state.focusType
-    if (focusType && nextFocusId) {
-      if (!state.rows[nextFocusId]) {
-        dispatch(loadRowAction(focusType, nextFocusId))
+    const { focusType, rows } = store.getState()
+    if (focusType) {
+      //update nav list to include unfocused row
+      const forceLoadIds = true
+      dispatch(loadIdsAction(focusType, forceLoadIds))
+      //load newly focused row
+      if (nextFocusId) {
+        if (!rows[nextFocusId]) {
+          dispatch(loadRowAction(focusType, nextFocusId))
+        }
       }
     }
   })
