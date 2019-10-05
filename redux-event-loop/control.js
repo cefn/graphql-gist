@@ -33,7 +33,7 @@ const saveRowAction = (rowType, localRow) => async (dispatch, getState) => {
 }
 
 //configure event sequences needed for the app 
-//launch the application with default type of 'note' and id of null
+//and launch the application with default type of 'note' and id of null
 function initialiseActions(store, initialType = "note", initialId = null) {
 
   const track = (path, fn) => {
@@ -56,13 +56,15 @@ function initialiseActions(store, initialType = "note", initialId = null) {
   })
 
   //load row when non-null id comes into focus  
-  track("focusId", (nextFocusId) => {
+  track("focusId", (nextFocusId, prevFocusId) => {
     const { focusType, rows } = store.getState()
     if (focusType) {
-      //refresh list of ids
-      dispatch(loadIdsAction(focusType))
-      //load newly focused row
-      if (nextFocusId) {
+      if (!prevFocusId) { //focusId was null (new row)
+        //refresh ids in case new row was assigned an id 
+        dispatch(loadIdsAction(focusType))
+      }
+      if (nextFocusId) { //newly focused row
+        //ensure it's loaded
         if (!rows[nextFocusId]) {
           dispatch(loadRowAction(focusType, nextFocusId))
         }
@@ -70,7 +72,10 @@ function initialiseActions(store, initialType = "note", initialId = null) {
     }
   })
 
-  //trigger application load, specifying type and id
+  //load all types
+  dispatch(loadTypesAction())
+
+  //set initial type and id
   dispatch(changeFocusAction(initialType, initialId))
 }
 
@@ -82,15 +87,6 @@ function launchStore() {
 
 export { //all values and callbacks
   launchStore,
-  loadTypesAction,
-  loadSchemaAction,
-  loadIdsAction,
-  loadRowAction,
-  changeFocusAction,
-  saveRowAction,
-}
-
-export default { //redux connector dispatch map 
   changeFocusAction,
   saveRowAction,
 }

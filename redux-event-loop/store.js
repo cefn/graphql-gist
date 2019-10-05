@@ -17,7 +17,6 @@ function storeValue(type, path, value) {
   }
 }
 
-
 function storeValuesByPath(type, valuesByPath) {
   if (typeof type === "function") {
     return storeValuesByPath(type.name, valuesByPath)
@@ -42,11 +41,11 @@ const defaultReducer = (state = [], action) => {
   const { type, payload } = action
   if (payload) {
     state = { ...state } //shallow copy previous state
-    if (isString(payload.path)) {
+    if (isString(payload.path)) { //single path,value pair
       const { path, value } = payload
       set(state, path, value)
     }
-    else if (isPlainObject(payload.valuesByPath)) {
+    else if (isPlainObject(payload.valuesByPath)) { //map of paths to values
       for (const [path, value] of Object.entries(payload.valuesByPath)) {
         set(state, path, value)
       }
