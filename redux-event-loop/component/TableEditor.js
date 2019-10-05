@@ -1,31 +1,9 @@
 import React from "react"
-import { connect } from "react-redux"
+import PropTypes from "prop-types"
+
 import RowEditor from "./RowEditor"
-import { changeFocusAction, saveRowAction } from "../control"
 
-/* CONFIGURE REDUX CONNECTOR */
-
-//map redux store to react props 
-const stateToProps = ({ focusType, focusId, schemas, rows, ids } /*, ownProps*/) => ({
-  focusType,
-  focusTypeIds: ids[focusType] || [],
-  focusTypeSchema: schemas[focusType],
-  focusId,
-  focusIdRow: rows[focusId],
-})
-
-//map callback actions to react props 
-const dispatchToProps = {
-  changeFocusAction,
-  saveRowAction
-}
-
-//wire state and actions to props
-const reduxConnector = connect(stateToProps, dispatchToProps)
-
-/* CREATE TABLE EDITOR */
-
-const TableEditor = reduxConnector((props) => {
+const TableEditor = (props) => {
 
   const createFocusChanger = (rowType, rowId) => function focusChanger() {
     return props.changeFocusAction(rowType, rowId)
@@ -45,7 +23,23 @@ const TableEditor = reduxConnector((props) => {
     </ul>
     {props.focusTypeSchema ? <RowEditor schema={props.focusTypeSchema} row={props.focusIdRow} onChange={rowChangeHandler}></RowEditor> : <h2>Loading Editor...</h2>}
   </>
-})
+}
+TableEditor.defaultProps = {
+  focusType: null,
+  focusTypeIds: [],
+  focusTypeSchema: null,
+  focusId: null,
+  focusIdRow: null,
+}
+TableEditor.propTypes = {
+  focusType: PropTypes.func,
+  focusTypeIds: PropTypes.array,
+  focusTypeSchema: PropTypes.object,
+  focusId: PropTypes.string,
+  focusIdRow: PropTypes.object,
+  changeFocusAction: PropTypes.func.isRequired,
+  saveRowAction: PropTypes.func.isRequired
+}
 
 
 export default TableEditor
