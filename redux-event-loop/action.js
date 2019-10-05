@@ -1,8 +1,6 @@
 import reduxWatch from "redux-watch"
-import { logger } from "./util"
 import { storeValue, storePromisedValue, storeValuesByPath } from "./store"
 import backend from "./backend"
-import isEqual from "is-equal"
 
 //synchronous state-merging actions
 
@@ -21,76 +19,18 @@ const changeFocusAction = (focusType, focusId) => storeValuesByPath(changeFocusA
 
 //lazy, asynchronous, backend-service-using actions
 
-function loadTypesAction(force = false) {
-  return async (dispatch, getState) => {
-    const state = getState()
-    if (force || !state.types) {
-      try { return dispatch(receiveTypesAction(await backend.loadTypes())) }
-      catch (error) { logger.log({ error, message: "Loading types failed" }) }
-    }
-    else {
-      logger.log("loadTypesAction skipped - already satisfied")
-    }
-  }
-}
+const loadTypesAction = () => storePromisedValue(loadTypesAction, "types", backend.loadTypes())
+const loadSchemaAction = (rowType) => storePromisedValue(loadSchemaAction, `schemas.${rowType}`, backend.loadSchema(rowType))
+const loadIdsAction = (rowType) => storePromisedValue(loadIdsAction, `ids.${rowType}`, backend.loadIds(rowType))
+const loadRowAction = (rowType, rowId) => storePromisedValue(loadRowAction, `rows.${rowId}`, backend.loadItem(rowType, rowId))
 
-function loadSchemaAction(rowType, force = false) {
-  return async (dispatch, getState) => {
-    const state = getState()
-    if (force || !(state.schemas[rowType])) {
-      try { return dispatch(receiveSchemaAction(rowType, await backend.loadSchema(rowType))) }
-      catch (error) { logger.log({ error, message: `Loading schema for '${rowType}' failed` }) }
-    }
-    else {
-      logger.log("loadSchemaAction skipped - already satisfied")
-    }
+const saveRowAction = (rowType, localRow) => async (dispatch, getState) => {
+  const { rows, focusType } = getState()
+  const remoteRow = await backend.saveItem(rowType, localRow)
+  if (remoteRow.id !== localRow.id) { //focus on newly assigned id
+    dispatch(changeFocusAction(focusType, remoteRow.id))
   }
-}
-
-
-const loadIdsAction = (rowType, force = false) => {
-  return async (dispatch, getState) => {
-    const state = getState()
-    if (force || !(state.ids[rowType])) {
-      try { return dispatch(receiveIdsAction(rowType, await backend.loadIds(rowType))) }
-      catch (error) { logger.log({ error, message: `Loading ids for '${rowType}' failed` }) }
-    }
-    else {
-      logger.log("loadIdsAction skipped - already satisfied")
-    }
-  }
-}
-
-const loadRowAction = (rowType, rowId, force = false) => {
-  return async (dispatch, getState) => {
-    const state = getState()
-    if (force || !(state.rows[rowId])) {
-      try { return dispatch(receiveRowAction(await backend.loadItem(rowType, rowId))) }
-      catch (error) { logger.log({ error, message: `Loading row type:'${rowType}'  id:'${rowId}' failed` }) }
-    }
-    else {
-      logger.log("loadRowAction skipped - already satisfied")
-    }
-  }
-}
-
-function saveRowAction(rowType, localRow, force = false) {
-  return async (dispatch, getState) => {
-    const state = getState()
-    if (force || (!(isEqual(state.rows[localRow.id], localRow)))) {
-      try {
-        const remoteRow = await backend.saveItem(rowType, localRow)
-        if (remoteRow.id !== localRow.id) { //focus on newly assigned id
-          dispatch(changeFocusAction(state.focusType, remoteRow.id))
-        }
-        dispatch(receiveRowAction(remoteRow))
-      }
-      catch (error) { logger.log({ error, message: `Saving row ${localRow} failed` }) }
-    }
-    else {
-      logger.log("saveRowAction skipped - already satisfied")
-    }
-  }
+  dispatch(storeValue(saveRowAction, `rows.${remoteRow.id}`, remoteRow))
 }
 
 function track(store, path, fn) {
@@ -98,8 +38,8 @@ function track(store, path, fn) {
   store.subscribe(watch(fn))
 }
 
-//launch the application with default type of 'note' and id of null
 //configure event sequences needed for the app 
+//launch the application with default type of 'note' and id of null
 function launchApplication(store, initialType = "note", initialId = null) {
   const dispatch = store.dispatch
 
