@@ -3,10 +3,6 @@ import { storeValue, storePromisedValue, storeValuesByPath } from "./store"
 import backend from "./backend"
 
 //synchronous state-merging actions
-const receiveTypesAction = (types) => storeValue(receiveTypesAction, "types", types) //types known to server
-const receiveSchemaAction = (type, schema) => storeValue(receiveSchemaAction, `schemas.${type}`, schema) //schema for a type
-const receiveIdsAction = (type, ids) => storeValue(receiveIdsAction, `ids.${type}`, ids) //ids for a type
-const receiveRowAction = (row) => storeValue(receiveRowAction, `rows.${row.id}`, row) //an updated row
 const changeFocusAction = (focusType, focusId) => storeValuesByPath(changeFocusAction, { focusType, focusId }) //navigate to a row
 
 //lazy, asynchronous, backend-service-using actions
@@ -68,10 +64,6 @@ export default {
   loadSchemaAction,
   loadIdsAction,
   loadRowAction,
-  receiveTypesAction,
-  receiveSchemaAction,
-  receiveIdsAction,
-  receiveRowAction,
   changeFocusAction,
   saveRowAction,
   launchApplication,
