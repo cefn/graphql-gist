@@ -1,13 +1,21 @@
 import React from "react"
 import PropTypes from "prop-types"
 import ReactDom from "react-dom"
-import { store } from "./store"
 import { Provider, connect } from "react-redux"
 import whyDidYouRender from "@welldone-software/why-did-you-render"
 
+import { launchStore } from "./action"
+
+//launch the application store and logic
+const store = launchStore()
+
+//monitor wasted renders
+whyDidYouRender(React)
+
 /* CONFIGURE REDUX CONNECTOR */
 
-import action from "./action"
+//a map of redux actions to be be dispatch-wrapped, assigned to props 
+import tableEditorDispatchMap from "./action"
 
 //a map of redux store to editor props 
 const tableEditorStateMap = ({ focusType, focusId, schemas, rows, ids } /*, ownProps*/) => ({
@@ -18,19 +26,10 @@ const tableEditorStateMap = ({ focusType, focusId, schemas, rows, ids } /*, ownP
   focusIdRow: rows[focusId],
 })
 
-//a map of redux actions to be be dispatch-wrapped, assigned to props 
-const tableEditorDispatchMap = action
-
 //connector which wires state and functions to props
 const tableEditorReduxConnector = connect(tableEditorStateMap, tableEditorDispatchMap)
 
-//trigger data loading
-const { launchApplication } = action
-launchApplication(store)
-
-//monitor wasted renders
-whyDidYouRender(React)
-
+/* CREATE TABLE EDITOR */
 
 const TableEditor = tableEditorReduxConnector((props) => {
 
@@ -53,8 +52,9 @@ const TableEditor = tableEditorReduxConnector((props) => {
     {props.focusTypeSchema ? <RowEditor schema={props.focusTypeSchema} row={props.focusIdRow} onChange={rowChangeHandler}></RowEditor> : <h2>Loading Editor...</h2>}
   </>
 })
-
 TableEditor.whyDidYouRender = true
+
+/* CREATE ROW EDITOR */
 
 // eslint-disable-next-line react/display-name
 const RowEditor = React.memo(
@@ -90,6 +90,7 @@ RowEditor.propTypes = {
 }
 RowEditor.whyDidYouRender = true
 
+/* RENDER EVERYTHING */
 
 ReactDom.render(
   <Provider store={store}>

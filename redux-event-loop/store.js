@@ -4,15 +4,6 @@ import isString from "lodash/isString"
 import isPlainObject from "lodash/isPlainObject"
 import set from "lodash/set"
 
-const defaultState = {
-  types: [], //list of types
-  schemas: {}, //map schemas by type
-  ids: {}, //map id lists by type
-  rows: {}, //map rows by id
-  focusType: null, //the row type in focus
-  focusId: null, //the row id in focus
-}
-
 function storeValue(type, path, value) {
   if (typeof type === "function") {
     return storeValue(type.name, path, value)
@@ -46,7 +37,7 @@ function storePromisedValue(type, path, valuePromise) {
   }
 }
 
-const defaultReducer = (state = defaultState, action) => {
+const defaultReducer = (state = [], action) => {
   //seeks values and paths in the payload which define merges
   const { type, payload } = action
   if (payload) {
@@ -67,15 +58,17 @@ const defaultReducer = (state = defaultState, action) => {
   return state
 }
 
-const store = createStore(
-  defaultReducer,
-  defaultState,
-  applyMiddleware(reduxThunk) //support promise factories (dispatch, getState) => result
-)
+function initialiseStore(defaultState) {
+  return createStore(
+    defaultReducer, //handles storeValue, storeValueMap, storePromisedValue actions
+    defaultState,
+    applyMiddleware(reduxThunk) //support promise factories (dispatch, getState) => result
+  )
+}
 
 export {
-  store,
   storeValue,
   storeValuesByPath,
   storePromisedValue,
+  initialiseStore
 }
