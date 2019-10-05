@@ -1,7 +1,8 @@
 import { createStore, applyMiddleware } from "redux"
 import reduxThunk from "redux-thunk"
-import deepMerge from "deepmerge"
-import { containsTree } from "./util"
+import isString from "lodash/isString"
+import isPlainObject from "lodash/isPlainObject"
+import set from "lodash/set"
 
 const defaultState = {
   types: [], //list of types
@@ -12,25 +13,57 @@ const defaultState = {
   focusId: null, //the row id in focus
 }
 
-const populateAction = (fn, payload) => ({ type: fn.name, payload })
-const populateMerge = (fn, mergeState) => populateAction(fn, { mergeState })
-const populateMergeCheck = (fn, mergeState, checkState) => populateAction(fn, { mergeState, checkState })
-
-const replaceArray = (_destinationArray, sourceArray, _options) => sourceArray
-const mergeObject = (a, b) => deepMerge(a, b, { arrayMerge: replaceArray })
-
-const defaultReducer = (state = defaultState, action) => {
-  const { type, payload } = action
-  //try to perform merges optionally with tree check
-  if (payload) {
-    const { mergeState, checkState } = payload
-    if (mergeState) {
-      if ((!checkState) || containsTree(state, checkState)) {
-        state = mergeObject(state, mergeState)
-      }
+function storeValue(type, path, value) {
+  if (typeof type === "function") {
+    return storeValue(type.name, path, value)
+  }
+  return {
+    type,
+    payload: {
+      path,
+      value
     }
   }
+}
 
+
+function storeValuesByPath(type, valuesByPath) {
+  if (typeof type === "function") {
+    return storeValuesByPath(type.name, valuesByPath)
+  }
+  return {
+    type,
+    payload: {
+      valuesByPath
+    }
+  }
+}
+
+function storePromisedValue(type, path, valuePromise) {
+  return async (dispatch) => {
+    const value = await valuePromise
+    dispatch(storeValue(type, path, value))
+  }
+}
+
+const defaultReducer = (state = defaultState, action) => {
+  //seeks values and paths in the payload which define merges
+  const { type, payload } = action
+  if (payload) {
+    state = { ...state } //shallow copy previous state
+    if (isString(payload.path)) {
+      const { path, value } = payload
+      set(state, path, value)
+    }
+    else if (isPlainObject(payload.valuesByPath)) {
+      for (const [path, value] of Object.entries(payload.valuesByPath)) {
+        set(state, path, value)
+      }
+    }
+    else {
+      throw `Couldn't reduce action:\n${JSON.stringify(action, null, "\t")}`
+    }
+  }
   return state
 }
 
@@ -42,5 +75,7 @@ const store = createStore(
 
 export {
   store,
-  populateMerge,
+  storeValue,
+  storeValuesByPath,
+  storePromisedValue,
 }

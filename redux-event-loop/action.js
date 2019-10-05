@@ -1,27 +1,23 @@
 import reduxWatch from "redux-watch"
 import { logger } from "./util"
-import { populateMerge } from "./store"
+import { storeValue, storePromisedValue, storeValuesByPath } from "./store"
 import backend from "./backend"
 import isEqual from "is-equal"
 
 //synchronous state-merging actions
 
 //TODO change to function signature for intellisense auto-complete
+
 //receive the list of possible types from the server 
-const receiveTypesAction = (types) => populateMerge(receiveTypesAction, { types })
-
+const receiveTypesAction = (types) => storeValue(receiveTypesAction, "types", types)
 //receive schema for a type from the server
-const receiveSchemaAction = (type, schema) => populateMerge(receiveSchemaAction, { schemas: { [type]: schema } })
-
+const receiveSchemaAction = (type, schema) => storeValue(receiveSchemaAction, `schemas.${type}`, schema)
 //receive list of ids for a type from the server
-const receiveIdsAction = (type, ids) => populateMerge(receiveIdsAction, { ids: { [type]: ids } })
-
+const receiveIdsAction = (type, ids) => storeValue(receiveIdsAction, `ids.${type}`, ids)
 //receive an update to a row from the editor or server
-const receiveRowAction = (row) => populateMerge(receiveRowAction, { rows: { [row.id]: row } })
-
+const receiveRowAction = (row) => storeValue(receiveRowAction, `rows.${row.id}`, row)
 //change the focus row of the app
-const changeFocusAction = (focusType, focusId) => populateMerge(changeFocusAction, { focusType, focusId })
-
+const changeFocusAction = (focusType, focusId) => storeValuesByPath(changeFocusAction, { focusType, focusId })
 
 //lazy, asynchronous, backend-service-using actions
 
