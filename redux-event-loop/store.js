@@ -42,7 +42,7 @@ function storeValuesByPath(type, valuesByPath) {
 function storePromisedValue(type, path, valuePromise) {
   return async (dispatch) => {
     const value = await valuePromise
-    dispatch(storeValue(type, path, value))
+    return dispatch(storeValue(type, path, value))
   }
 }
 
@@ -70,7 +70,7 @@ const defaultReducer = (state = defaultState, action) => {
 const store = createStore(
   defaultReducer,
   defaultState,
-  applyMiddleware(reduxThunk)
+  applyMiddleware(reduxThunk) //support promise factories (dispatch, getState) => result
 )
 
 export {
