@@ -3,6 +3,8 @@ const chrome = require("selenium-webdriver/chrome")
 const nodeFetch = require("node-fetch")
 require("chromedriver")
 
+//TODO missing coverage for navigation by click
+
 const frontPage = "http://localhost:8080"
 const headless = true
 const editTimeout = 200
