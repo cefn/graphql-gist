@@ -1,3 +1,4 @@
+/* eslint-disable require-atomic-updates */
 import { createStore, applyMiddleware } from "redux"
 import reduxSaga from "redux-saga"
 import { call, put, spawn, take, select } from "redux-saga/effects"
@@ -13,17 +14,29 @@ const defaultState = {
   focusId: null, //the row id in focus
 }
 
-function* selectorChangeSaga(selector, saga) {
-  let previous = yield select(selector)
+// previous wrapping signature for state monitoring
+// function* selectorChangeSaga(selector, saga) {
+//   let previous = yield select(selector)
+//   while (true) {
+//     const action = yield take()
+//     const next = yield select(selector)
+//     if (next !== previous) {
+//       yield* saga(next, previous)
+//       previous = next
+//     }
+//   }
+// }
+
+function* monitorSelector(selector, valueFilter, takePattern = "*") {
   while (true) {
-    const action = yield take()
-    const next = yield select(selector)
-    if (next !== previous) {
-      yield* saga(next, previous)
-      previous = next
+    const nextValue = yield select(selector)
+    if (valueFilter(nextValue)) {
+      return nextValue
     }
+    yield take(takePattern)
   }
 }
+
 
 //synchronous state-merging actions
 function* changeFocusSaga(focusType, focusId) { //navigate to a row
@@ -38,7 +51,9 @@ function* loadRowSaga(rowType, rowId) { yield* createStoreResolvedSaga(`rows.${r
 
 //lazy-load schema and id list when non-null type comes into focus
 function* focusTypeSaga() {
-  yield* selectorChangeSaga(state => state.focusType, function* (focusType) {
+  let previousFocusType
+  while (true) {
+    const focusType = yield* monitorSelector(state => state.focusType, focusType => focusType !== previousFocusType)
     if (focusType) {
       //load schema if missing
       const schema = yield select(state => state.schemas[focusType])
@@ -51,15 +66,18 @@ function* focusTypeSaga() {
         yield spawn(loadIdsSaga, focusType)
       }
     }
-  })
+    previousFocusType = focusType
+  }
 }
 
 //load row when non-null id comes into focus  
 function* focusIdSaga() {
-  yield* selectorChangeSaga(state => state.focusId, function* (focusId, prevFocusId) {
+  let previousFocusId
+  while (true) {
+    const focusId = yield* monitorSelector(state => state.focusId, focusId => focusId !== previousFocusId)
     const { focusType, rows } = yield select()
     if (focusType) {
-      if (!prevFocusId) { //focusId previously new row (null id)
+      if (!previousFocusId) { //focusId previously empty or new row (null id)
         //ensure id list is refreshed to include saved row
         yield spawn(loadIdsSaga, focusType)
       }
@@ -70,7 +88,8 @@ function* focusIdSaga() {
         }
       }
     }
-  })
+    previousFocusId = focusId
+  }
 }
 
 
