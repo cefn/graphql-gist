@@ -14,19 +14,6 @@ const defaultState = {
   focusId: null, //the row id in focus
 }
 
-// previous wrapping signature for state monitoring
-// function* selectorChangeSaga(selector, saga) {
-//   let previous = yield select(selector)
-//   while (true) {
-//     const action = yield take()
-//     const next = yield select(selector)
-//     if (next !== previous) {
-//       yield* saga(next, previous)
-//       previous = next
-//     }
-//   }
-// }
-
 function* monitorSelector(selector, valueFilter, takePattern = "*") {
   while (true) {
     const nextValue = yield select(selector)
