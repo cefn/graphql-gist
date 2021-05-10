@@ -119,7 +119,7 @@
     "geckodriver": "^1.18.0",
     "is-equal": "^1.5.5",
     "jest": "^24.9.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "lodash-id": "^0.14.0",
     "node-fetch": "^2.6.0",
     "prop-types": "^15.7.2",
